@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#050d1a">
+<meta name="mobile-web-app-capable" content="yes">
+<title>FileSync</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Variables ──────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:       #050d1a;
+  --surface:  #081629;
+  --card:     #0b1e36;
+  --card-h:   #0f2541;
+  --border:   #142d4a;
+  --border-l: #1a3a5c;
+  --cyan:     #00ccff;
+  --cyan-d:   #0099cc;
+  --cyan-glow:rgba(0,204,255,.18);
+  --violet:   #7c3aed;
+  --green:    #00e676;
+  --red:      #ff4757;
+  --amber:    #ffb300;
+  --text:     #c8e0ff;
+  --text-2:   #6a9ac4;
+  --text-3:   #3d6080;
+  --radius:   10px;
+  --shadow:   0 8px 32px rgba(0,0,0,.5);
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Outfit',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+/* ── Scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border-l);border-radius:99px}
+/* ── Layout ─────────────────────────────────────────────── */
+#app{display:flex;flex-direction:column;min-height:100vh;max-width:960px;margin:0 auto;padding:0 16px}
+
+/* ── Header ─────────────────────────────────────────────── */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 0 12px;
+  border-bottom:1px solid var(--border);
+  gap:12px;
+  position:sticky;top:0;z-index:50;
+  background:var(--bg);
+}
+.logo{
+  display:flex;align-items:center;gap:8px;
+  font-size:1.25rem;font-weight:700;letter-spacing:-.5px;
+  color:#fff;
+  white-space:nowrap;
+}
+.logo-icon{
+  width:32px;height:32px;background:var(--cyan);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;
+  box-shadow:0 0 14px var(--cyan-glow);
+}
+.header-right{display:flex;align-items:center;gap:8px}
+/* ── Connection badge ───────────────────────────────────── */
+.conn-badge{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:99px;
+  border:1px solid var(--border);
+  font-size:.78rem;color:var(--text-2);
+  background:var(--surface);
+  cursor:default;
+  white-space:nowrap;
+}
+.conn-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--text-3);
+  transition:background .3s;
+}
+.conn-dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+.conn-dot.on{animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.5}}
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 14px;border-radius:8px;border:none;
+  font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:500;
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.btn-primary{background:var(--cyan);color:#000}
+.btn-primary:hover{background:#33d6ff;box-shadow:0 0 16px var(--cyan-glow)}
+.btn-ghost{background:transparent;color:var(--text-2);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--card-h);color:var(--text);border-color:var(--border-l)}
+.btn-danger{background:rgba(255,71,87,.12);color:var(--red);border:1px solid rgba(255,71,87,.2)}
+.btn-danger:hover{background:rgba(255,71,87,.22)}
+.btn-sm{padding:5px 10px;font-size:.78rem;border-radius:6px}
+.btn-icon{padding:7px 9px}
+/* ── Bridge (connection visual) ─────────────────────────── */
+.bridge{
+  margin:20px 0 6px;
+  display:flex;align-items:center;justify-content:center;
+  gap:0;
+}
+.bridge-device{
+  display:flex;flex-direction:column;align-items:center;
+  gap:4px;width:80px;
+  font-size:.72rem;color:var(--text-2);
+  font-family:'JetBrains Mono',monospace;
+}
+.bridge-icon{
+  width:44px;height:44px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;
+  border:1px solid var(--border-l);
+  background:var(--card);
+}
+.bridge-line{
+  flex:1;height:2px;background:var(--border);
+  position:relative;overflow:hidden;
+  max-width:200px;
+}
+.bridge-line::after{
+  content:'';position:absolute;
+  left:-100%;width:60%;height:100%;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent);
+  animation:flow 2s linear infinite;
+}
+.bridge-line.off::after{display:none}
+@keyframes flow{to{left:200%}}
+.bridge-center{
+  display:flex;flex-direction:column;align-items:center;
+  font-size:.7rem;color:var(--text-3);
+  font-family:'JetBrains Mono',monospace;
+  padding:0 8px;
+  white-space:nowrap;
+}
+.bridge-center span{color:var(--cyan);font-weight:500}
+/* ── Drop zone ───────────────────────────────────────────── */
+.drop-zone{
+  border:2px dashed var(--border);
+  border-radius:var(--radius);
+  padding:28px 20px;
+  text-align:center;
+  cursor:pointer;
+  transition:all .2s;
+  margin:16px 0 0;
+  position:relative;
+}
+.drop-zone:hover,.drop-zone.active{
+  border-color:var(--cyan);
+  background:var(--cyan-glow);
+}
+.drop-zone.active .dz-icon{transform:scale(1.15) translateY(-3px);filter:drop-shadow(0 0 12px var(--cyan))}
+.dz-icon{font-size:2rem;display:block;margin-bottom:8px;transition:all .2s}
+.dz-title{font-size:1rem;font-weight:600;color:#fff;margin-bottom:4px}
+.dz-sub{font-size:.8rem;color:var(--text-2)}
+.dz-sub b{color:var(--cyan)}
+/* ── Upload progress ─────────────────────────────────────── */
+#uploadList{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.upload-item{
+  display:flex;align-items:center;gap:10px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:8px;padding:8px 12px;
+  animation:slide-in .2s ease;
+}
+@keyframes slide-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.upload-item-name{flex:1;font-size:.82rem;font-family:'JetBrains Mono',monospace;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.upload-item-pct{font-size:.75rem;color:var(--cyan);font-family:'JetBrains Mono',monospace;min-width:36px;text-align:right}
+.upload-bar-wrap{flex:2;height:4px;background:var(--border);border-radius:99px;overflow:hidden}
+.upload-bar{height:100%;background:var(--cyan);border-radius:99px;width:0;transition:width .15s}
+.upload-bar.done{background:var(--green)}
+.upload-bar.err{background:var(--red)}
+/* ── Toolbar ─────────────────────────────────────────────── */
+.toolbar{
+  display:flex;align-items:center;gap:8px;
+  margin:16px 0 10px;flex-wrap:wrap;
+}
+.toolbar-left{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.search-wrap{position:relative;flex:1;min-width:120px}
+.search-wrap input{
+  width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:7px 10px 7px 34px;
+  color:var(--text);font-family:'Outfit',sans-serif;font-size:.85rem;
+  outline:none;transition:border-color .15s;
+}
+.search-wrap input:focus{border-color:var(--cyan)}
+.search-wrap input::placeholder{color:var(--text-3)}
+.search-icon{
+  position:absolute;left:10px;top:50%;transform:translateY(-50%);
+  font-size:.85rem;color:var(--text-3);pointer-events:none;
+}
+.select-sort{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:7px 10px;color:var(--text);
+  font-family:'Outfit',sans-serif;font-size:.82rem;
+  outline:none;cursor:pointer;
+}
+.count-badge{
+  font-size:.78rem;color:var(--text-2);
+  font-family:'JetBrains Mono',monospace;
+  white-space:nowrap;
+}
+/* ── Batch bar ───────────────────────────────────────────── */
+.batch-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:60;
+  background:var(--card);border-top:1px solid var(--cyan);
+  padding:12px 20px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  transform:translateY(100%);transition:transform .25s ease;
+  box-shadow:0 -8px 32px rgba(0,204,255,.08);
+}
+.batch-bar.show{transform:translateY(0)}
+.batch-count{
+  flex:1;font-size:.88rem;font-weight:600;color:var(--cyan);
+  font-family:'JetBrains Mono',monospace;
+}
+.batch-actions{display:flex;gap:8px;flex-wrap:wrap}
+/* ── File grid ───────────────────────────────────────────── */
+#fileContainer{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:10px;
+  padding-bottom:80px;
+}
+#fileContainer.list-view{grid-template-columns:1fr}
+/* ── File card ───────────────────────────────────────────── */
+.file-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px 14px;
+  display:flex;align-items:center;gap:12px;
+  transition:all .15s;cursor:default;
+  animation:card-in .2s ease both;
+  position:relative;
+}
+.file-card:hover{background:var(--card-h);border-color:var(--border-l)}
+.file-card.selected{border-color:var(--cyan);background:rgba(0,204,255,.06)}
+@keyframes card-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.file-check{
+  width:18px;height:18px;border-radius:4px;
+  border:2px solid var(--border-l);background:transparent;
+  cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.file-card.selected .file-check{background:var(--cyan);border-color:var(--cyan)}
+.file-check::after{
+  content:'✓';font-size:11px;color:#000;
+  opacity:0;transition:opacity .1s;
+}
+.file-card.selected .file-check::after{opacity:1}
+.file-icon{font-size:1.5rem;flex-shrink:0}
+.file-info{flex:1;min-width:0}
+.file-name{
+  font-size:.85rem;font-weight:500;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-family:'JetBrains Mono',monospace;
+  color:var(--text);
+  margin-bottom:3px;
+}
+.file-meta{
+  font-size:.72rem;color:var(--text-3);
+  font-family:'JetBrains Mono',monospace;
+  display:flex;gap:8px;align-items:center;
+}
+.file-type-pill{
+  background:var(--surface);border-radius:4px;
+  padding:1px 5px;font-size:.65rem;color:var(--text-3);
+  text-transform:uppercase;letter-spacing:.5px;
+  border:1px solid var(--border);
+}
+.file-actions{display:flex;gap:5px;flex-shrink:0}
+.icon-btn{
+  width:30px;height:30px;border-radius:6px;
+  border:1px solid var(--border);background:transparent;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:.85rem;
+  color:var(--text-2);transition:all .15s;
+}
+.icon-btn:hover{border-color:var(--border-l);background:var(--surface);color:var(--text)}
+.icon-btn.dl:hover{border-color:var(--cyan);color:var(--cyan)}
+.icon-btn.del:hover{border-color:var(--red);color:var(--red)}
+/* ── Empty / Loading ─────────────────────────────────────── */
+.empty-state,.loading-state{
+  grid-column:1/-1;
+  text-align:center;padding:60px 20px;
+  color:var(--text-3);
+}
+.empty-icon{font-size:3rem;margin-bottom:12px;display:block}
+.empty-title{font-size:1.1rem;font-weight:600;color:var(--text-2);margin-bottom:6px}
+.empty-sub{font-size:.85rem}
+.spinner{
+  width:36px;height:36px;border:3px solid var(--border);
+  border-top-color:var(--cyan);border-radius:50%;
+  animation:spin .7s linear infinite;margin:0 auto 12px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* ── QR Modal ────────────────────────────────────────────── */
+.modal-overlay{
+  position:fixed;inset:0;z-index:100;
+  background:rgba(5,13,26,.85);backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal-box{
+  background:var(--card);border:1px solid var(--border-l);
+  border-radius:16px;padding:28px;
+  max-width:380px;width:100%;
+  box-shadow:var(--shadow),0 0 60px rgba(0,204,255,.08);
+  transform:scale(.95);transition:transform .2s;
+}
+.modal-overlay.open .modal-box{transform:scale(1)}
+.modal-title{font-size:1.2rem;font-weight:700;color:#fff;margin-bottom:6px}
+.modal-sub{font-size:.82rem;color:var(--text-2);margin-bottom:20px}
+.qr-wrap{
+  background:#fff;border-radius:12px;padding:14px;
+  display:flex;justify-content:center;margin-bottom:18px;
+}
+.qr-wrap img{width:100%;max-width:200px}
+.url-box{
+  display:flex;align-items:center;gap:8px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:8px 12px;margin-bottom:14px;
+}
+.url-text{
+  flex:1;font-family:'JetBrains Mono',monospace;
+  font-size:.82rem;color:var(--cyan);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.steps{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.step{
+  display:flex;align-items:flex-start;gap:10px;
+  font-size:.82rem;color:var(--text-2);
+}
+.step-num{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--cyan);color:#000;font-weight:700;
+  font-size:.7rem;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:1px;
+}
+.modal-close-btn{
+  position:absolute;top:14px;right:14px;
+  width:28px;height:28px;border-radius:50%;
+  border:1px solid var(--border);background:var(--surface);
+  color:var(--text-2);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.8rem;transition:all .15s;
+}
+.modal-close-btn:hover{color:var(--text);border-color:var(--border-l)}
+.modal-box{position:relative}
+/* ── Preview modal ───────────────────────────────────────── */
+.preview-overlay{
+  position:fixed;inset:0;z-index:101;
+  background:rgba(0,0,0,.92);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  gap:12px;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.preview-overlay.open{opacity:1;pointer-events:all}
+.preview-img{max-width:100%;max-height:75vh;border-radius:8px}
+.preview-name{font-size:.82rem;color:var(--text-2);font-family:'JetBrains Mono',monospace}
+/* ── Toast ───────────────────────────────────────────────── */
+#toasts{
+  position:fixed;bottom:24px;right:16px;z-index:200;
+  display:flex;flex-direction:column-reverse;gap:8px;
+  pointer-events:none;
+}
+.toast{
+  padding:9px 14px;border-radius:8px;
+  font-size:.82rem;font-weight:500;
+  max-width:280px;pointer-events:none;
+  border-left:3px solid var(--cyan);
+  background:var(--card);
+  box-shadow:var(--shadow);
+  transform:translateX(120%);transition:transform .25s ease;
+}
+.toast.show{transform:translateX(0)}
+.toast.success{border-color:var(--green)}
+.toast.error{border-color:var(--red)}
+.toast.warn{border-color:var(--amber)}
+/* ── Settings row ────────────────────────────────────────── */
+.settings-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;background:var(--surface);
+  border-radius:var(--radius);border:1px solid var(--border);
+  margin:10px 0 16px;flex-wrap:wrap;gap:8px;
+}
+.settings-item{
+  display:flex;align-items:center;gap:8px;
+  font-size:.8rem;color:var(--text-2);
+}
+/* toggle */
+.toggle{
+  position:relative;width:36px;height:20px;
+  background:var(--border);border-radius:99px;
+  cursor:pointer;transition:background .2s;
+}
+.toggle.on{background:var(--cyan)}
+.toggle::after{
+  content:'';position:absolute;
+  top:3px;left:3px;width:14px;height:14px;
+  background:#fff;border-radius:50%;
+  transition:transform .2s;
+}
+.toggle.on::after{transform:translateX(16px)}
+/* ── Auto-download banner ────────────────────────────────── */
+.auto-dl-banner{
+  display:none;
+  align-items:center;gap:10px;
+  background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.25);
+  border-radius:8px;padding:8px 14px;margin-top:10px;
+  font-size:.8rem;color:var(--text-2);
+}
+.auto-dl-banner.visible{display:flex}
+/* ── Responsive ──────────────────────────────────────────── */
+@media(max-width:520px){
+  #fileContainer{grid-template-columns:1fr}
+  .bridge-device{width:60px}
+  .bridge-center{font-size:.65rem}
+  .header{flex-wrap:wrap}
+  .logo{font-size:1.1rem}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">⇄</div>
+      FileSync
+    </div>
+    <div class="header-right">
+      <div class="conn-badge">
+        <div class="conn-dot" id="connDot"></div>
+        <span id="connLabel">Connecting…</span>
+      </div>
+      <button class="btn btn-primary btn-sm" id="qrBtn">📱 Android</button>
+      <button class="btn btn-ghost btn-sm btn-icon" id="refreshBtn" title="Refresh">↻</button>
+    </div>
+  </header>
+
+  <!-- CONNECTION BRIDGE -->
+  <div class="bridge">
+    <div class="bridge-device">
+      <div class="bridge-icon">💻</div>
+      <span>PC</span>
+    </div>
+    <div class="bridge-line" id="bridgeLine"></div>
+    <div class="bridge-center">
+      <span id="peerCount">—</span>
+      <div>devices</div>
+    </div>
+    <div class="bridge-line" id="bridgeLine2"></div>
+    <div class="bridge-device">
+      <div class="bridge-icon">📱</div>
+      <span>Android</span>
+    </div>
+  </div>
+
+  <!-- SETTINGS ROW -->
+  <div class="settings-row">
+    <div class="settings-item">
+      <div class="toggle" id="autoRefreshToggle" title="Auto-refresh when files change"></div>
+      <span>Auto-refresh</span>
+    </div>
+    <div class="settings-item">
+      <div class="toggle" id="autoDownloadToggle" title="Auto-download new files (Android only)"></div>
+      <span>Auto-download</span>
+    </div>
+    <div class="settings-item" id="folderInfo" style="display:none">
+      <button class="btn btn-ghost btn-sm" id="openFolderBtn">📂 Open Folder</button>
+    </div>
+    <div class="settings-item">
+      <span style="font-size:.75rem;font-family:'JetBrains Mono',monospace;color:var(--text-3)" id="totalSize">—</span>
+    </div>
+  </div>
+
+  <!-- AUTO-DOWNLOAD BANNER -->
+  <div class="auto-dl-banner" id="autoDownloadBanner">
+    <span>✅</span>
+    <span>Auto-download is ON — new files added from PC will download automatically.</span>
+  </div>
+
+  <!-- DROP ZONE -->
+  <div class="drop-zone" id="dropZone">
+    <span class="dz-icon">📤</span>
+    <div class="dz-title">Drop files here to sync</div>
+    <div class="dz-sub">or <b>click to browse</b> · all file types · up to 10 GB each</div>
+    <input type="file" id="fileInput" multiple accept="*/*" style="display:none">
+  </div>
+
+  <!-- UPLOAD PROGRESS -->
+  <div id="uploadList"></div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search files…">
+      </div>
+      <select class="select-sort" id="sortSelect">
+        <option value="date-desc">Newest first</option>
+        <option value="date-asc">Oldest first</option>
+        <option value="name-asc">Name A→Z</option>
+        <option value="name-desc">Name Z→A</option>
+        <option value="size-desc">Largest first</option>
+        <option value="size-asc">Smallest first</option>
+      </select>
+    </div>
+    <div class="count-badge" id="countBadge">— files</div>
+    <button class="btn btn-ghost btn-sm btn-icon" id="viewToggle" title="Toggle view">⊞</button>
+    <button class="btn btn-ghost btn-sm" id="selectAllBtn">☐ All</button>
+  </div>
+
+  <!-- FILE GRID -->
+  <div id="fileContainer">
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <div>Loading files…</div>
+    </div>
+  </div>
+</div>
+
+<!-- BATCH BAR -->
+<div class="batch-bar" id="batchBar">
+  <span class="batch-count" id="batchCount">0 selected</span>
+  <div class="batch-actions">
+    <button class="btn btn-primary btn-sm" id="downloadZipBtn">⬇ Download ZIP</button>
+    <button class="btn btn-danger btn-sm" id="deleteSelectedBtn">🗑 Delete</button>
+    <button class="btn btn-ghost btn-sm" id="clearSelBtn">✕ Clear</button>
+  </div>
+</div>
+
+<!-- QR MODAL -->
+<div class="modal-overlay" id="qrModal">
+  <div class="modal-box">
+    <button class="modal-close-btn" id="qrCloseBtn">✕</button>
+    <div class="modal-title">Connect Android Device</div>
+    <div class="modal-sub">Make sure both devices are on the same Wi-Fi network</div>
+    <div class="qr-wrap" id="qrWrap">
+      <img id="qrImg" src="" alt="QR Code">
+    </div>
+    <div class="url-box">
+      <span class="url-text" id="urlText">loading…</span>
+      <button class="btn btn-ghost btn-sm" id="copyUrlBtn">Copy</button>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><span>Connect Android to the same Wi-Fi as this PC</span></div>
+      <div class="step"><div class="step-num">2</div><span>Open the Android camera and scan the QR code above</span></div>
+      <div class="step"><div class="step-num">3</div><span>Tap the link that appears — FileSync opens in Chrome</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- IMAGE PREVIEW -->
+<div class="preview-overlay" id="previewOverlay">
+  <button class="btn btn-ghost" id="previewCloseBtn" style="position:fixed;top:16px;right:16px">✕ Close</button>
+  <img class="preview-img" id="previewImg" src="" alt="">
+  <div class="preview-name" id="previewName"></div>
+</div>
+
+<!-- TOASTS -->
+<div id="toasts"></div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+const state = {
+  files:       [],
+  selected:    new Set(),
+  filter:      '',
+  sort:        'date-desc',
+  viewMode:    'grid',   // 'grid' | 'list'
+  ws:          null,
+  wsAlive:     false,
+  autoRefresh: true,
+  autoDownload:false,
+  serverInfo:  null,
+  uploading:   {},       // name → { loaded, total, done, err }
+  isMobile:    /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)
+};
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+(async function init() {
+  loadPrefs();
+  applyPrefs();
+  await loadServerInfo();
+  await loadFiles();
+  connectWS();
+  setupDragDrop();
+  if (!state.isMobile) {
+    document.getElementById('folderInfo').style.display = 'flex';
+  }
+})();
+
+// ─── Prefs ────────────────────────────────────────────────────────────────────
+function loadPrefs() {
+  try {
+    const p = JSON.parse(sessionStorage.getItem('fs_prefs') || '{}');
+    if (p.sort)        state.sort        = p.sort;
+    if (p.viewMode)    state.viewMode    = p.viewMode;
+    if (p.autoRefresh  != null) state.autoRefresh  = p.autoRefresh;
+    if (p.autoDownload != null) state.autoDownload = p.autoDownload;
+  } catch {}
+}
+function savePrefs() {
+  try { sessionStorage.setItem('fs_prefs', JSON.stringify({
+    sort: state.sort, viewMode: state.viewMode,
+    autoRefresh: state.autoRefresh, autoDownload: state.autoDownload
+  })); } catch {}
+}
+function applyPrefs() {
+  document.getElementById('sortSelect').value = state.sort;
+  setToggle('autoRefreshToggle', state.autoRefresh);
+  setToggle('autoDownloadToggle', state.autoDownload);
+  updateAutoDownloadBanner();
+  updateViewMode();
+}
+
+// ─── Server info ──────────────────────────────────────────────────────────────
+async function loadServerInfo() {
+  try {
+    const r = await fetch('/api/info');
+    state.serverInfo = await r.json();
+    document.getElementById('urlText').textContent = state.serverInfo.url;
+    const img = document.getElementById('qrImg');
+    if (state.serverInfo.qr) img.src = state.serverInfo.qr;
+    else { img.parentElement.innerHTML = `<div style="padding:20px;color:var(--text-2);font-size:.8rem">
+      QR unavailable — enter URL manually: <b>${state.serverInfo.url}</b></div>`; }
+    if (!state.isMobile && state.serverInfo.platform) {
+      document.getElementById('folderInfo').style.display = 'flex';
+    }
+  } catch {}
+}
+
+// ─── Load files ───────────────────────────────────────────────────────────────
+async function loadFiles() {
+  try {
+    const r = await fetch('/api/files');
+    const d = await r.json();
+    state.files = d.files || [];
+    document.getElementById('totalSize').textContent = formatSize(d.totalSize || 0) + ' total';
+    renderFiles();
+  } catch { toast('Failed to load files', 'error'); }
+}
+
+// ─── Render files ─────────────────────────────────────────────────────────────
+function renderFiles() {
+  const q    = state.filter.toLowerCase().trim();
+  let   list = state.files.filter(f => !q || f.name.toLowerCase().includes(q));
+
+  const [key, dir] = state.sort.split('-');
+  list = list.sort((a, b) => {
+    let va, vb;
+    if (key === 'date')  { va = new Date(a.modified); vb = new Date(b.modified); }
+    else if (key === 'size') { va = a.size; vb = b.size; }
+    else { va = a.name.toLowerCase(); vb = b.name.toLowerCase(); }
+    if (va < vb) return dir === 'asc' ? -1 : 1;
+    if (va > vb) return dir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const c = document.getElementById('fileContainer');
+  document.getElementById('countBadge').textContent = `${list.length} file${list.length !== 1 ? 's' : ''}`;
+
+  if (!list.length) {
+    c.innerHTML = `<div class="empty-state">
+      <span class="empty-icon">${q ? '🔍' : '📂'}</span>
+      <div class="empty-title">${q ? 'No matching files' : 'Sync folder is empty'}</div>
+      <div class="empty-sub">${q ? 'Try a different search term' : 'Drop files above or upload from Android'}</div>
+    </div>`;
+    return;
+  }
+
+  c.innerHTML = list.map((f, i) => `
+    <div class="file-card${state.selected.has(f.name) ? ' selected' : ''}"
+         data-name="${esc(f.name)}"
+         style="animation-delay:${Math.min(i, 12) * 20}ms">
+      <div class="file-check" data-check="${esc(f.name)}"></div>
+      <div class="file-icon">${fileIcon(f.type, f.ext)}</div>
+      <div class="file-info">
+        <div class="file-name" title="${esc(f.name)}">${esc(f.name)}</div>
+        <div class="file-meta">
+          <span>${formatSize(f.size)}</span>
+          <span>·</span>
+          <span>${timeAgo(f.modified)}</span>
+          ${f.ext ? `<span class="file-type-pill">${esc(f.ext)}</span>` : ''}
+        </div>
+      </div>
+      <div class="file-actions">
+        ${isPreviewable(f.type) ? `<button class="icon-btn preview-btn" data-name="${esc(f.name)}" data-type="${esc(f.type)}" title="Preview">👁</button>` : ''}
+        <button class="icon-btn dl" data-dl="${esc(f.name)}" title="Download">⬇</button>
+        <button class="icon-btn del" data-del="${esc(f.name)}" title="Delete">✕</button>
+      </div>
+    </div>`).join('');
+
+  // Events via delegation
+  c.onclick = (e) => {
+    const el = e.target;
+    // Checkbox
+    if (el.dataset.check !== undefined) {
+      toggleSelect(el.dataset.check); return;
+    }
+    // Download
+    if (el.dataset.dl !== undefined) {
+      downloadFile(el.dataset.dl); return;
+    }
+    // Delete
+    if (el.dataset.del !== undefined) {
+      confirmDelete([el.dataset.del]); return;
+    }
+    // Preview
+    if (el.classList.contains('preview-btn')) {
+      openPreview(el.dataset.name, el.dataset.type); return;
+    }
+    // Card click → select
+    const card = el.closest('.file-card');
+    if (card && !el.closest('.file-actions')) {
+      toggleSelect(card.dataset.name);
+    }
+  };
+}
+
+// ─── Selection ────────────────────────────────────────────────────────────────
+function toggleSelect(name) {
+  if (state.selected.has(name)) state.selected.delete(name);
+  else state.selected.add(name);
+  updateSelection();
+  renderFiles();
+}
+function updateSelection() {
+  const n   = state.selected.size;
+  const bar = document.getElementById('batchBar');
+  bar.classList.toggle('show', n > 0);
+  document.getElementById('batchCount').textContent = `${n} file${n !== 1 ? 's' : ''} selected`;
+}
+document.getElementById('selectAllBtn').onclick = () => {
+  const filtered = state.files.filter(f =>
+    !state.filter || f.name.toLowerCase().includes(state.filter.toLowerCase()));
+  if (state.selected.size === filtered.length) { state.selected.clear(); }
+  else { filtered.forEach(f => state.selected.add(f.name)); }
+  updateSelection(); renderFiles();
+};
+document.getElementById('clearSelBtn').onclick = () => {
+  state.selected.clear(); updateSelection(); renderFiles();
+};
+
+// ─── Download ─────────────────────────────────────────────────────────────────
+function downloadFile(name) {
+  const a = document.createElement('a');
+  a.href = `/api/download/${encodeURIComponent(name)}`;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  toast(`⬇ Downloading ${name}`, 'info');
+}
+document.getElementById('downloadZipBtn').onclick = async () => {
+  if (!state.selected.size) return;
+  toast(`📦 Preparing ZIP for ${state.selected.size} file(s)…`);
+  try {
+    const r = await fetch('/api/download-zip', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ files: [...state.selected] })
+    });
+    const blob = await r.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `filesync-${Date.now()}.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('✅ ZIP download started', 'success');
+  } catch { toast('ZIP download failed', 'error'); }
+};
+
+// ─── Delete ───────────────────────────────────────────────────────────────────
+function confirmDelete(names) {
+  if (!confirm(`Delete ${names.length} file(s)?\n\n${names.slice(0,5).join('\n')}${names.length > 5 ? '\n…' : ''}`)) return;
+  deleteFiles(names);
+}
+async function deleteFiles(names) {
+  try {
+    const r = await fetch('/api/files', {
+      method: 'DELETE', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ files: names })
+    });
+    const d = await r.json();
+    names.forEach(n => state.selected.delete(n));
+    updateSelection();
+    toast(`🗑 Deleted ${d.deleted.length} file(s)`, 'success');
+    await loadFiles();
+  } catch { toast('Delete failed', 'error'); }
+}
+document.getElementById('deleteSelectedBtn').onclick = () => {
+  if (!state.selected.size) return;
+  confirmDelete([...state.selected]);
+};
+
+// ─── Upload ───────────────────────────────────────────────────────────────────
+document.getElementById('dropZone').onclick = (e) => {
+  if (e.target.closest('.upload-item')) return;
+  document.getElementById('fileInput').click();
+};
+document.getElementById('fileInput').onchange = (e) => {
+  if (e.target.files.length) uploadFiles([...e.target.files]);
+  e.target.value = '';
+};
+
+function setupDragDrop() {
+  const dz = document.getElementById('dropZone');
+  let dragDepth = 0;
+
+  document.addEventListener('dragover', e => e.preventDefault());
+  document.addEventListener('dragenter', () => { dragDepth++; dz.classList.add('active'); });
+  document.addEventListener('dragleave', () => { dragDepth--; if (dragDepth === 0) dz.classList.remove('active'); });
+  document.addEventListener('drop', (e) => {
+    e.preventDefault(); dragDepth = 0; dz.classList.remove('active');
+    const files = [...e.dataTransfer.files];
+    if (files.length) uploadFiles(files);
+  });
+}
+
+async function uploadFiles(files) {
+  const list = document.getElementById('uploadList');
+  const CONCURRENT = 3;
+  const queue = [...files];
+  let active  = 0;
+
+  function next() {
+    while (active < CONCURRENT && queue.length) {
+      const file = queue.shift();
+      active++;
+      addUploadRow(file.name, list);
+      uploadOne(file).finally(() => { active--; next(); });
+    }
+  }
+  next();
+}
+
+function addUploadRow(name, container) {
+  const div = document.createElement('div');
+  div.className = 'upload-item';
+  div.id = 'up-' + CSS.escape(name);
+  div.innerHTML = `
+    <span class="upload-item-name" title="${esc(name)}">${esc(name)}</span>
+    <div class="upload-bar-wrap"><div class="upload-bar" id="bar-${CSS.escape(name)}"></div></div>
+    <span class="upload-item-pct" id="pct-${CSS.escape(name)}">0%</span>`;
+  container.appendChild(div);
+  container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function uploadOne(file) {
+  return new Promise((resolve) => {
+    const fd  = new FormData();
+    fd.append('files', file, file.name);
+    const xhr = new XMLHttpRequest();
+
+    const setBar = (pct, cls = '') => {
+      const bar = document.getElementById('bar-' + CSS.escape(file.name));
+      const pctEl = document.getElementById('pct-' + CSS.escape(file.name));
+      if (bar)   { bar.style.width = pct + '%'; if (cls) bar.className = 'upload-bar ' + cls; }
+      if (pctEl) pctEl.textContent = pct < 100 ? pct + '%' : cls === 'err' ? '✕' : '✓';
+    };
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) setBar(Math.round(e.loaded / e.total * 100));
+    };
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        setBar(100, 'done');
+        toast(`✅ ${file.name}`, 'success', 2500);
+      } else {
+        setBar(100, 'err');
+        toast(`Upload failed: ${file.name}`, 'error');
+      }
+      setTimeout(() => {
+        document.getElementById('up-' + CSS.escape(file.name))?.remove();
+      }, 2500);
+      loadFiles();
+      resolve();
+    };
+    xhr.onerror = () => { setBar(100, 'err'); toast(`Network error: ${file.name}`, 'error'); resolve(); };
+    xhr.open('POST', '/api/upload');
+    xhr.send(fd);
+  });
+}
+
+// ─── WebSocket ────────────────────────────────────────────────────────────────
+function connectWS() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  state.ws = new WebSocket(`${proto}//${location.host}`);
+
+  state.ws.onopen = () => {
+    state.wsAlive = true;
+    setConnected(true);
+  };
+  state.ws.onclose = () => {
+    state.wsAlive = false;
+    setConnected(false);
+    setTimeout(connectWS, 3000);
+  };
+  state.ws.onerror  = () => state.ws.close();
+  state.ws.onmessage = (e) => {
+    try { handleWS(JSON.parse(e.data)); } catch {}
+  };
+
+  // Heartbeat
+  setInterval(() => {
+    if (state.ws?.readyState === WebSocket.OPEN) state.ws.send('{"type":"ping"}');
+  }, 25000);
+}
+
+function handleWS(msg) {
+  switch (msg.type) {
+    case 'file_added':
+      if (state.autoRefresh) loadFiles();
+      toast(`📥 New file: ${msg.name}`, 'success');
+      if (state.autoDownload && state.isMobile) {
+        setTimeout(() => downloadFile(msg.name), 600);
+      }
+      break;
+    case 'file_removed':
+      if (state.autoRefresh) loadFiles();
+      break;
+    case 'file_changed':
+      if (state.autoRefresh) loadFiles();
+      break;
+    case 'peers_updated':
+      document.getElementById('peerCount').textContent = msg.count;
+      break;
+    case 'welcome':
+      document.getElementById('peerCount').textContent = '—';
+      break;
+  }
+}
+
+function setConnected(on) {
+  const dot   = document.getElementById('connDot');
+  const label = document.getElementById('connLabel');
+  dot.classList.toggle('on', on);
+  label.textContent = on ? 'Live' : 'Reconnecting…';
+  document.getElementById('bridgeLine').classList.toggle('off', !on);
+  document.getElementById('bridgeLine2').classList.toggle('off', !on);
+}
+
+// ─── Preview ──────────────────────────────────────────────────────────────────
+function isPreviewable(type) { return type && type.startsWith('image/'); }
+
+function openPreview(name, type) {
+  if (!isPreviewable(type)) { downloadFile(name); return; }
+  const ov = document.getElementById('previewOverlay');
+  const img = document.getElementById('previewImg');
+  img.src = `/api/download/${encodeURIComponent(name)}`;
+  document.getElementById('previewName').textContent = name;
+  ov.classList.add('open');
+}
+document.getElementById('previewOverlay').onclick = (e) => {
+  if (e.target === document.getElementById('previewOverlay') ||
+      e.target === document.getElementById('previewCloseBtn') ||
+      e.target.closest('#previewCloseBtn')) {
+    document.getElementById('previewOverlay').classList.remove('open');
+    document.getElementById('previewImg').src = '';
+  }
+};
+
+// ─── QR Modal ─────────────────────────────────────────────────────────────────
+document.getElementById('qrBtn').onclick = () => document.getElementById('qrModal').classList.add('open');
+document.getElementById('qrCloseBtn').onclick = () => document.getElementById('qrModal').classList.remove('open');
+document.getElementById('qrModal').onclick = (e) => {
+  if (e.target === document.getElementById('qrModal')) document.getElementById('qrModal').classList.remove('open');
+};
+document.getElementById('copyUrlBtn').onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(document.getElementById('urlText').textContent);
+    toast('🔗 Link copied!', 'success');
+  } catch { toast('Copy failed — try manually', 'warn'); }
+};
+
+// ─── Open folder (PC) ─────────────────────────────────────────────────────────
+document.getElementById('openFolderBtn').onclick = async () => {
+  try { await fetch('/api/open-folder', { method:'POST' }); }
+  catch { toast('Could not open folder', 'error'); }
+};
+
+// ─── Search & sort ────────────────────────────────────────────────────────────
+document.getElementById('searchInput').oninput = (e) => {
+  state.filter = e.target.value; renderFiles();
+};
+document.getElementById('sortSelect').onchange = (e) => {
+  state.sort = e.target.value; savePrefs(); renderFiles();
+};
+document.getElementById('refreshBtn').onclick = () => {
+  loadFiles(); toast('🔄 Refreshed', 'info', 1500);
+};
+
+// ─── View mode ────────────────────────────────────────────────────────────────
+document.getElementById('viewToggle').onclick = () => {
+  state.viewMode = state.viewMode === 'grid' ? 'list' : 'grid';
+  updateViewMode(); savePrefs();
+};
+function updateViewMode() {
+  const c   = document.getElementById('fileContainer');
+  const btn = document.getElementById('viewToggle');
+  c.classList.toggle('list-view', state.viewMode === 'list');
+  btn.textContent = state.viewMode === 'list' ? '⊞' : '≡';
+}
+
+// ─── Toggles ──────────────────────────────────────────────────────────────────
+function setToggle(id, val) {
+  document.getElementById(id).classList.toggle('on', val);
+}
+document.getElementById('autoRefreshToggle').onclick = () => {
+  state.autoRefresh = !state.autoRefresh;
+  setToggle('autoRefreshToggle', state.autoRefresh);
+  savePrefs();
+};
+document.getElementById('autoDownloadToggle').onclick = () => {
+  state.autoDownload = !state.autoDownload;
+  setToggle('autoDownloadToggle', state.autoDownload);
+  updateAutoDownloadBanner();
+  savePrefs();
+  if (state.autoDownload) toast('Auto-download ON — new PC files will download here', 'success');
+};
+function updateAutoDownloadBanner() {
+  document.getElementById('autoDownloadBanner')
+    .classList.toggle('visible', state.autoDownload && state.isMobile);
+}
+
+// ─── Toasts ───────────────────────────────────────────────────────────────────
+function toast(msg, type = 'info', ms = 3000) {
+  const c   = document.getElementById('toasts');
+  const el  = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  c.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => {
+    el.classList.remove('show');
+    el.addEventListener('transitionend', () => el.remove(), { once: true });
+    setTimeout(() => el.remove(), 400);
+  }, ms);
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+    .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function formatSize(b) {
+  if (!b) return '0 B';
+  const u = ['B','KB','MB','GB','TB'];
+  const i = Math.min(Math.floor(Math.log(b) / Math.log(1024)), 4);
+  return `${(b / Math.pow(1024, i)).toFixed(i ? 1 : 0)} ${u[i]}`;
+}
+function timeAgo(s) {
+  const d = Math.floor((Date.now() - new Date(s)) / 1000);
+  if (d < 10)   return 'just now';
+  if (d < 60)   return d + 's ago';
+  if (d < 3600) return Math.floor(d/60) + 'm ago';
+  if (d < 86400)return Math.floor(d/3600) + 'h ago';
+  return Math.floor(d/86400) + 'd ago';
+}
+function fileIcon(type, ext) {
+  if (!type) return '📄';
+  if (type.startsWith('image/'))  return '🖼️';
+  if (type.startsWith('video/'))  return '🎬';
+  if (type.startsWith('audio/'))  return '🎵';
+  if (type === 'application/pdf') return '📕';
+  if (/word|docx?/i.test(type) || /docx?/.test(ext))  return '📝';
+  if (/spreadsheet|xlsx?/i.test(type) || /xlsx?/.test(ext)) return '📊';
+  if (/presentation|pptx?/i.test(type))  return '📽️';
+  if (/zip|rar|7z|gz|tar|bz/i.test(type + ext)) return '📦';
+  if (/json|xml|yaml|csv/i.test(ext))  return '🗂️';
+  if (/js|ts|py|html|css|java|cpp|c|go|rs|sh/i.test(ext)) return '💻';
+  if (/txt|md|log|ini|conf/i.test(ext)) return '📋';
+  return '📄';
+}
+</script>
+</body>
+</html>
